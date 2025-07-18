@@ -1,13 +1,15 @@
 local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 local Player = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- GUIの状態を保存するテーブル
+-- GUIの状態を保存
 local guiState = {
     Position = UDim2.new(0, 10, 0, 10),
     Size = UDim2.new(0, 300, 0, 400),
+    ShowButtonPosition = UDim2.new(0, 10, 0, 10),
     Brightness = 2,
     FOV = 70,
     MaxZoom = 128,
@@ -19,21 +21,31 @@ local function createGUI()
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Parent = Player.PlayerGui
     ScreenGui.Name = "LightingAndCameraControl"
-    ScreenGui.ResetOnSpawn = false -- リスポーン時にリセットされないように
+    ScreenGui.ResetOnSpawn = false
 
     -- フレーム
     local Frame = Instance.new("Frame")
     Frame.Size = guiState.Size
     Frame.Position = guiState.Position
-    Frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    Frame.BackgroundTransparency = 0.3
+    Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    Frame.BackgroundTransparency = 0.2
     Frame.BorderSizePixel = 0
+    local FrameCorner = Instance.new("UICorner")
+    FrameCorner.CornerRadius = UDim.new(0, 10)
+    FrameCorner.Parent = Frame
+    local FrameStroke = Instance.new("UIStroke")
+    FrameStroke.Color = Color3.fromRGB(0, 255, 255)
+    FrameStroke.Thickness = 2
+    FrameStroke.Parent = Frame
     Frame.Parent = ScreenGui
 
     -- ドラッグ用のタイトルバー
     local TitleBar = Instance.new("Frame")
     TitleBar.Size = UDim2.new(1, 0, 0, 30)
-    TitleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    TitleBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    local TitleBarCorner = Instance.new("UICorner")
+    TitleBarCorner.CornerRadius = UDim.new(0, 10)
+    TitleBarCorner.Parent = TitleBar
     TitleBar.Parent = Frame
 
     local Title = Instance.new("TextLabel")
@@ -41,9 +53,9 @@ local function createGUI()
     Title.Position = UDim2.new(0, 5, 0, 0)
     Title.BackgroundTransparency = 1
     Title.Text = "Lighting & Camera Control"
-    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Title.TextColor3 = Color3.fromRGB(0, 255, 255)
     Title.TextScaled = true
-    Title.Font = Enum.Font.SourceSansBold
+    Title.Font = Enum.Font.GothamBold
     Title.TextXAlignment = Enum.TextXAlignment.Left
     Title.Parent = TitleBar
 
@@ -55,7 +67,11 @@ local function createGUI()
     CloseButton.Text = "X"
     CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     CloseButton.TextScaled = true
+    CloseButton.Font = Enum.Font.Gotham
     CloseButton.Parent = TitleBar
+    local CloseButtonCorner = Instance.new("UICorner")
+    CloseButtonCorner.CornerRadius = UDim.new(0, 5)
+    CloseButtonCorner.Parent = CloseButton
 
     -- 最小化ボタン
     local MinimizeButton = Instance.new("TextButton")
@@ -65,15 +81,27 @@ local function createGUI()
     MinimizeButton.Text = "-"
     MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     MinimizeButton.TextScaled = true
+    MinimizeButton.Font = Enum.Font.Gotham
     MinimizeButton.Parent = TitleBar
+    local MinimizeButtonCorner = Instance.new("UICorner")
+    MinimizeButtonCorner.CornerRadius = UDim.new(0, 5)
+    MinimizeButtonCorner.Parent = MinimizeButton
 
     -- 再表示ボタン（画像）
     local ShowButton = Instance.new("ImageButton")
     ShowButton.Size = UDim2.new(0, 50, 0, 50)
-    ShowButton.Position = UDim2.new(0, 10, 0, 10)
-    ShowButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    ShowButton.Image = "rbxassetid://14009298549" -- Robloxの設定アイコン
-    ShowButton.BackgroundTransparency = 0.3
+    ShowButton.Position = guiState.ShowButtonPosition
+    ShowButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    ShowButton.BackgroundTransparency = 0.2
+    ShowButton.Image = "rbxassetid://6031068421" -- 矢印アイコン
+    ShowButton.ImageColor3 = Color3.fromRGB(0, 255, 255)
+    local ShowButtonCorner = Instance.new("UICorner")
+    ShowButtonCorner.CornerRadius = UDim.new(0, 25)
+    ShowButtonCorner.Parent = ShowButton
+    local ShowButtonStroke = Instance.new("UIStroke")
+    ShowButtonStroke.Color = Color3.fromRGB(0, 255, 255)
+    ShowButtonStroke.Thickness = 2
+    ShowButtonStroke.Parent = ShowButton
     ShowButton.Visible = false
     ShowButton.Parent = ScreenGui
 
@@ -81,8 +109,11 @@ local function createGUI()
     local ResizeHandle = Instance.new("TextButton")
     ResizeHandle.Size = UDim2.new(0, 15, 0, 15)
     ResizeHandle.Position = UDim2.new(1, -15, 1, -15)
-    ResizeHandle.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
+    ResizeHandle.BackgroundColor3 = Color3.fromRGB(0, 255, 255)
     ResizeHandle.Text = ""
+    local ResizeHandleCorner = Instance.new("UICorner")
+    ResizeHandleCorner.CornerRadius = UDim.new(0, 5)
+    ResizeHandleCorner.Parent = ResizeHandle
     ResizeHandle.Parent = Frame
 
     -- コンテンツフレーム
@@ -100,6 +131,7 @@ local function createGUI()
     BrightnessLabel.Text = "Brightness: " .. guiState.Brightness
     BrightnessLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     BrightnessLabel.TextScaled = true
+    BrightnessLabel.Font = Enum.Font.Gotham
     BrightnessLabel.Parent = ContentFrame
 
     local BrightnessSlider = Instance.new("TextButton")
@@ -107,6 +139,12 @@ local function createGUI()
     BrightnessSlider.Position = UDim2.new(0.1, 0, 0, 40)
     BrightnessSlider.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
     BrightnessSlider.Text = ""
+    local BrightnessSliderGradient = Instance.new("UIGradient")
+    BrightnessSliderGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 100, 100))
+    }
+    BrightnessSliderGradient.Parent = BrightnessSlider
     BrightnessSlider.Parent = ContentFrame
 
     -- FOVスライダー
@@ -117,6 +155,7 @@ local function createGUI()
     FOVLabel.Text = "FOV: " .. guiState.FOV
     FOVLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     FOVLabel.TextScaled = true
+    FOVLabel.Font = Enum.Font.Gotham
     FOVLabel.Parent = ContentFrame
 
     local FOVSlider = Instance.new("TextButton")
@@ -124,6 +163,12 @@ local function createGUI()
     FOVSlider.Position = UDim2.new(0.1, 0, 0, 100)
     FOVSlider.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
     FOVSlider.Text = ""
+    local FOVSliderGradient = Instance.new("UIGradient")
+    FOVSliderGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 100, 100))
+    }
+    FOVSliderGradient.Parent = FOVSlider
     FOVSlider.Parent = ContentFrame
 
     -- ズーム距離スライダー
@@ -134,6 +179,7 @@ local function createGUI()
     ZoomLabel.Text = "Max Zoom: " .. guiState.MaxZoom
     ZoomLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     ZoomLabel.TextScaled = true
+    ZoomLabel.Font = Enum.Font.Gotham
     ZoomLabel.Parent = ContentFrame
 
     local ZoomSlider = Instance.new("TextButton")
@@ -141,6 +187,12 @@ local function createGUI()
     ZoomSlider.Position = UDim2.new(0.1, 0, 0, 160)
     ZoomSlider.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
     ZoomSlider.Text = ""
+    local ZoomSliderGradient = Instance.new("UIGradient")
+    ZoomSliderGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 100, 100))
+    }
+    ZoomSliderGradient.Parent = ZoomSlider
     ZoomSlider.Parent = ContentFrame
 
     -- 影オン/オフボタン
@@ -151,7 +203,11 @@ local function createGUI()
     ShadowButton.Text = "Shadows: " .. (guiState.Shadows and "ON" or "OFF")
     ShadowButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     ShadowButton.TextScaled = true
+    ShadowButton.Font = Enum.Font.Gotham
     ShadowButton.Parent = ContentFrame
+    local ShadowButtonCorner = Instance.new("UICorner")
+    ShadowButtonCorner.CornerRadius = UDim.new(0, 5)
+    ShadowButtonCorner.Parent = ShadowButton
 
     -- リセットボタン
     local ResetButton = Instance.new("TextButton")
@@ -161,7 +217,36 @@ local function createGUI()
     ResetButton.Text = "Reset to Default"
     ResetButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     ResetButton.TextScaled = true
+    ResetButton.Font = Enum.Font.Gotham
     ResetButton.Parent = ContentFrame
+    local ResetButtonCorner = Instance.new("UICorner")
+    ResetButtonCorner.CornerRadius = UDim.new(0, 5)
+    ResetButtonCorner.Parent = ResetButton
+
+    -- ホバーエフェクト
+    local function addHoverEffect(button)
+        local originalSize = button.Size
+        button.MouseEnter:Connect(function()
+            TweenService:Create(button, TweenInfo.new(0.2), {Size = UDim2.new(originalSize.X.Scale * 1.05, originalSize.X.Offset, originalSize.Y.Scale * 1.05, originalSize.Y.Offset)}):Play()
+            TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(150, 150, 150)}):Play()
+        end)
+        button.MouseLeave:Connect(function()
+            TweenService:Create(button, TweenInfo.new(0.2), {Size = originalSize}):Play()
+            TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = button.BackgroundColor3}):Play()
+        end)
+    end
+    addHoverEffect(CloseButton)
+    addHoverEffect(MinimizeButton)
+    addHoverEffect(ShadowButton)
+    addHoverEffect(ResetButton)
+
+    -- ShowButtonのクリックアニメーション
+    ShowButton.MouseButton1Down:Connect(function()
+        TweenService:Create(ShowButton, TweenInfo.new(0.1), {Size = UDim2.new(0, 45, 0, 45)}):Play()
+    end)
+    ShowButton.MouseButton1Up:Connect(function()
+        TweenService:Create(ShowButton, TweenInfo.new(0.1), {Size = UDim2.new(0, 50, 0, 50)}):Play()
+    end)
 
     -- 初期ライティング設定
     local function initializeLighting()
@@ -209,7 +294,7 @@ local function createGUI()
         end)
     end
 
-    -- ドラッグ移動処理
+    -- ドラッグ移動処理（GUI）
     local dragging = false
     local dragStart = nil
     local startPos = nil
@@ -230,6 +315,30 @@ local function createGUI()
     TitleBar.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
+        end
+    end)
+
+    -- ドラッグ移動処理（ShowButton）
+    local showDragging = false
+    local showDragStart = nil
+    local showStartPos = nil
+    ShowButton.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            showDragging = true
+            showDragStart = input.Position
+            showStartPos = ShowButton.Position
+        end
+    end)
+    ShowButton.InputChanged:Connect(function(input)
+        if showDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - showDragStart
+            ShowButton.Position = UDim2.new(showStartPos.X.Scale, showStartPos.X.Offset + delta.X, showStartPos.Y.Scale, showStartPos.Y.Offset + delta.Y)
+            guiState.ShowButtonPosition = ShowButton.Position
+        end
+    end)
+    ShowButton.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            showDragging = false
         end
     end)
 
