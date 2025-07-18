@@ -72,7 +72,7 @@ local function createGUI()
     ShowButton.Size = UDim2.new(0, 50, 0, 50)
     ShowButton.Position = UDim2.new(0, 10, 0, 10)
     ShowButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    ShowButton.Image = "rbxassetid://10734949875" -- Robloxの設定アイコン
+    ShowButton.Image = "rbxassetid://14009298549" -- Robloxの設定アイコン
     ShowButton.BackgroundTransparency = 0.3
     ShowButton.Visible = false
     ShowButton.Parent = ScreenGui
