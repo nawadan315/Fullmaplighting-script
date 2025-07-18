@@ -1,0 +1,12 @@
+local Lighting = game:GetService("Lighting")
+
+-- 明るさの設定
+Lighting.Brightness = 2 -- 明るさを2に設定（デフォルトは1、もっと明るくしたいなら3や4も試してみて！）
+Lighting.Ambient = Color3.fromRGB(255, 255, 255) -- 環境光を白に設定して明るく
+Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255) -- 屋外の環境光も白で明るく
+Lighting.GlobalShadows = false -- 影をオフにして全体を明るく見せる
+Lighting.FogEnd = 100000 -- 霧を遠くに設定して視界をクリアに
+Lighting.ClockTime = 12 -- 昼間の時間（12時）に設定して明るさを最大化
+
+-- 必要に応じて、雰囲気をさらに明るくする
+Lighting.Atmosphere.Density = 0 -- 雰囲気の濃さを0にして霧っぽさをなくす
