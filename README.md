@@ -1,0 +1,1 @@
+# Fullmaplighting-script
