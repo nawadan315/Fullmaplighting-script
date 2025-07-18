@@ -4,185 +4,324 @@ local RunService = game:GetService("RunService")
 local Player = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- GUIの作成
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Parent = Player.PlayerGui
-ScreenGui.Name = "LightingAndCameraControl"
+-- GUIの状態を保存するテーブル
+local guiState = {
+    Position = UDim2.new(0, 10, 0, 10),
+    Size = UDim2.new(0, 300, 0, 400),
+    Brightness = 2,
+    FOV = 70,
+    MaxZoom = 128,
+    Shadows = false
+}
 
--- フレーム
-local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 300, 0, 400)
-Frame.Position = UDim2.new(0, 10, 0, 10)
-Frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-Frame.BackgroundTransparency = 0.3
-Frame.BorderSizePixel = 0
-Frame.Parent = ScreenGui
+-- GUIを作成する関数
+local function createGUI()
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Parent = Player.PlayerGui
+    ScreenGui.Name = "LightingAndCameraControl"
+    ScreenGui.ResetOnSpawn = false -- リスポーン時にリセットされないように
 
--- タイトル
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 50)
-Title.Position = UDim2.new(0, 0, 0, 0)
-Title.BackgroundTransparency = 1
-Title.Text = "Lighting & Camera Control"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextScaled = true
-Title.Font = Enum.Font.SourceSansBold
-Title.Parent = Frame
+    -- フレーム
+    local Frame = Instance.new("Frame")
+    Frame.Size = guiState.Size
+    Frame.Position = guiState.Position
+    Frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    Frame.BackgroundTransparency = 0.3
+    Frame.BorderSizePixel = 0
+    Frame.Parent = ScreenGui
 
--- 明るさスライダー
-local BrightnessLabel = Instance.new("TextLabel")
-BrightnessLabel.Size = UDim2.new(1, 0, 0, 30)
-BrightnessLabel.Position = UDim2.new(0, 0, 0, 60)
-BrightnessLabel.BackgroundTransparency = 1
-BrightnessLabel.Text = "Brightness: 2"
-BrightnessLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-BrightnessLabel.TextScaled = true
-BrightnessLabel.Parent = Frame
+    -- ドラッグ用のタイトルバー
+    local TitleBar = Instance.new("Frame")
+    TitleBar.Size = UDim2.new(1, 0, 0, 30)
+    TitleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    TitleBar.Parent = Frame
 
-local BrightnessSlider = Instance.new("TextButton")
-BrightnessSlider.Size = UDim2.new(0.8, 0, 0, 20)
-BrightnessSlider.Position = UDim2.new(0.1, 0, 0, 90)
-BrightnessSlider.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-BrightnessSlider.Text = ""
-BrightnessSlider.Parent = Frame
+    local Title = Instance.new("TextLabel")
+    Title.Size = UDim2.new(0.7, 0, 1, 0)
+    Title.Position = UDim2.new(0, 5, 0, 0)
+    Title.BackgroundTransparency = 1
+    Title.Text = "Lighting & Camera Control"
+    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Title.TextScaled = true
+    Title.Font = Enum.Font.SourceSansBold
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.Parent = TitleBar
 
--- FOVスライダー
-local FOVLabel = Instance.new("TextLabel")
-FOVLabel.Size = UDim2.new(1, 0, 0, 30)
-FOVLabel.Position = UDim2.new(0, 0, 0, 120)
-FOVLabel.BackgroundTransparency = 1
-FOVLabel.Text = "FOV: 70"
-FOVLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-FOVLabel.TextScaled = true
-FOVLabel.Parent = Frame
+    -- 閉じるボタン
+    local CloseButton = Instance.new("TextButton")
+    CloseButton.Size = UDim2.new(0, 30, 0, 30)
+    CloseButton.Position = UDim2.new(1, -30, 0, 0)
+    CloseButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    CloseButton.Text = "X"
+    CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    CloseButton.TextScaled = true
+    CloseButton.Parent = TitleBar
 
-local FOVSlider = Instance.new("TextButton")
-FOVSlider.Size = UDim2.new(0.8, 0, 0, 20)
-FOVSlider.Position = UDim2.new(0.1, 0, 0, 150)
-FOVSlider.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-FOVSlider.Text = ""
-FOVSlider.Parent = Frame
+    -- 最小化ボタン
+    local MinimizeButton = Instance.new("TextButton")
+    MinimizeButton.Size = UDim2.new(0, 30, 0, 30)
+    MinimizeButton.Position = UDim2.new(1, -60, 0, 0)
+    MinimizeButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    MinimizeButton.Text = "-"
+    MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    MinimizeButton.TextScaled = true
+    MinimizeButton.Parent = TitleBar
 
--- ズーム距離スライダー
-local ZoomLabel = Instance.new("TextLabel")
-ZoomLabel.Size = UDim2.new(1, 0, 0, 30)
-ZoomLabel.Position = UDim2.new(0, 0, 0, 180)
-ZoomLabel.BackgroundTransparency = 1
-ZoomLabel.Text = "Max Zoom: 128"
-ZoomLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-ZoomLabel.TextScaled = true
-ZoomLabel.Parent = Frame
+    -- 再表示ボタン（画像）
+    local ShowButton = Instance.new("ImageButton")
+    ShowButton.Size = UDim2.new(0, 50, 0, 50)
+    ShowButton.Position = UDim2.new(0, 10, 0, 10)
+    ShowButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    ShowButton.Image = "rbxassetid://10734949875" -- Robloxの設定アイコン
+    ShowButton.BackgroundTransparency = 0.3
+    ShowButton.Visible = false
+    ShowButton.Parent = ScreenGui
 
-local ZoomSlider = Instance.new("TextButton")
-ZoomSlider.Size = UDim2.new(0.8, 0, 0, 20)
-ZoomSlider.Position = UDim2.new(0.1, 0, 0, 210)
-ZoomSlider.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-ZoomSlider.Text = ""
-ZoomSlider.Parent = Frame
+    -- リサイズハンドル
+    local ResizeHandle = Instance.new("TextButton")
+    ResizeHandle.Size = UDim2.new(0, 15, 0, 15)
+    ResizeHandle.Position = UDim2.new(1, -15, 1, -15)
+    ResizeHandle.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
+    ResizeHandle.Text = ""
+    ResizeHandle.Parent = Frame
 
--- 影オン/オフボタン
-local ShadowButton = Instance.new("TextButton")
-ShadowButton.Size = UDim2.new(0.8, 0, 0, 40)
-ShadowButton.Position = UDim2.new(0.1, 0, 0, 260)
-ShadowButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-ShadowButton.Text = "Shadows: OFF"
-ShadowButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ShadowButton.TextScaled = true
-ShadowButton.Parent = Frame
+    -- コンテンツフレーム
+    local ContentFrame = Instance.new("Frame")
+    ContentFrame.Size = UDim2.new(1, 0, 1, -30)
+    ContentFrame.Position = UDim2.new(0, 0, 0, 30)
+    ContentFrame.BackgroundTransparency = 1
+    ContentFrame.Parent = Frame
 
--- リセットボタン
-local ResetButton = Instance.new("TextButton")
-ResetButton.Size = UDim2.new(0.8, 0, 0, 40)
-ResetButton.Position = UDim2.new(0.1, 0, 0, 310)
-ResetButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-ResetButton.Text = "Reset to Default"
-ResetButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ResetButton.TextScaled = true
-ResetButton.Parent = Frame
+    -- 明るさスライダー
+    local BrightnessLabel = Instance.new("TextLabel")
+    BrightnessLabel.Size = UDim2.new(1, 0, 0, 30)
+    BrightnessLabel.Position = UDim2.new(0, 0, 0, 10)
+    BrightnessLabel.BackgroundTransparency = 1
+    BrightnessLabel.Text = "Brightness: " .. guiState.Brightness
+    BrightnessLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    BrightnessLabel.TextScaled = true
+    BrightnessLabel.Parent = ContentFrame
 
--- 初期ライティング設定
-local function initializeLighting()
-    Lighting.Brightness = 2
-    Lighting.Ambient = Color3.fromRGB(255, 255, 255)
-    Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
-    Lighting.GlobalShadows = false
-    Lighting.FogEnd = 100000
-    Lighting.ClockTime = 12
-    Lighting.Atmosphere.Density = 0
-end
+    local BrightnessSlider = Instance.new("TextButton")
+    BrightnessSlider.Size = UDim2.new(0.8, 0, 0, 20)
+    BrightnessSlider.Position = UDim2.new(0.1, 0, 0, 40)
+    BrightnessSlider.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    BrightnessSlider.Text = ""
+    BrightnessSlider.Parent = ContentFrame
 
--- カメラ設定をリセット
-local function resetCamera()
-    Camera.CameraType = Enum.CameraType.Custom
-    Camera.CameraSubject = Player.Character and Player.Character:FindFirstChildOfClass("Humanoid")
-    Player.CameraMinZoomDistance = 0.5
-    Player.CameraMaxZoomDistance = 128
-    Camera.FieldOfView = 70
-    BrightnessLabel.Text = "Brightness: 2"
-    FOVLabel.Text = "FOV: 70"
-    ZoomLabel.Text = "Max Zoom: 128"
-    ShadowButton.Text = "Shadows: OFF"
-end
+    -- FOVスライダー
+    local FOVLabel = Instance.new("TextLabel")
+    FOVLabel.Size = UDim2.new(1, 0, 0, 30)
+    FOVLabel.Position = UDim2.new(0, 0, 0, 70)
+    FOVLabel.BackgroundTransparency = 1
+    FOVLabel.Text = "FOV: " .. guiState.FOV
+    FOVLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    FOVLabel.TextScaled = true
+    FOVLabel.Parent = ContentFrame
 
--- スライダーのドラッグ処理
-local function createSlider(slider, label, minValue, maxValue, defaultValue, updateFunction)
+    local FOVSlider = Instance.new("TextButton")
+    FOVSlider.Size = UDim2.new(0.8, 0, 0, 20)
+    FOVSlider.Position = UDim2.new(0.1, 0, 0, 100)
+    FOVSlider.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    FOVSlider.Text = ""
+    FOVSlider.Parent = ContentFrame
+
+    -- ズーム距離スライダー
+    local ZoomLabel = Instance.new("TextLabel")
+    ZoomLabel.Size = UDim2.new(1, 0, 0, 30)
+    ZoomLabel.Position = UDim2.new(0, 0, 0, 130)
+    ZoomLabel.BackgroundTransparency = 1
+    ZoomLabel.Text = "Max Zoom: " .. guiState.MaxZoom
+    ZoomLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ZoomLabel.TextScaled = true
+    ZoomLabel.Parent = ContentFrame
+
+    local ZoomSlider = Instance.new("TextButton")
+    ZoomSlider.Size = UDim2.new(0.8, 0, 0, 20)
+    ZoomSlider.Position = UDim2.new(0.1, 0, 0, 160)
+    ZoomSlider.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    ZoomSlider.Text = ""
+    ZoomSlider.Parent = ContentFrame
+
+    -- 影オン/オフボタン
+    local ShadowButton = Instance.new("TextButton")
+    ShadowButton.Size = UDim2.new(0.8, 0, 0, 40)
+    ShadowButton.Position = UDim2.new(0.1, 0, 0, 200)
+    ShadowButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    ShadowButton.Text = "Shadows: " .. (guiState.Shadows and "ON" or "OFF")
+    ShadowButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ShadowButton.TextScaled = true
+    ShadowButton.Parent = ContentFrame
+
+    -- リセットボタン
+    local ResetButton = Instance.new("TextButton")
+    ResetButton.Size = UDim2.new(0.8, 0, 0, 40)
+    ResetButton.Position = UDim2.new(0.1, 0, 0, 250)
+    ResetButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    ResetButton.Text = "Reset to Default"
+    ResetButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ResetButton.TextScaled = true
+    ResetButton.Parent = ContentFrame
+
+    -- 初期ライティング設定
+    local function initializeLighting()
+        Lighting.Brightness = guiState.Brightness
+        Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+        Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
+        Lighting.GlobalShadows = guiState.Shadows
+        Lighting.FogEnd = 100000
+        Lighting.ClockTime = 12
+        Lighting.Atmosphere.Density = 0
+    end
+
+    -- カメラ設定をリセット
+    local function resetCamera()
+        Camera.CameraType = Enum.CameraType.Custom
+        Camera.CameraSubject = Player.Character and Player.Character:FindFirstChildOfClass("Humanoid")
+        Player.CameraMinZoomDistance = 0.5
+        Player.CameraMaxZoomDistance = guiState.MaxZoom
+        Camera.FieldOfView = guiState.FOV
+        BrightnessLabel.Text = "Brightness: " .. guiState.Brightness
+        FOVLabel.Text = "FOV: " .. guiState.FOV
+        ZoomLabel.Text = "Max Zoom: " .. guiState.MaxZoom
+        ShadowButton.Text = "Shadows: " .. (guiState.Shadows and "ON" or "OFF")
+    end
+
+    -- スライダーのドラッグ処理
+    local function createSlider(slider, label, minValue, maxValue, defaultValue, updateFunction, stateKey)
+        local dragging = false
+        slider.MouseButton1Down:Connect(function()
+            dragging = true
+        end)
+        slider.MouseButton1Up:Connect(function()
+            dragging = false
+        end)
+        slider.MouseMoved:Connect(function(x, y)
+            if dragging then
+                local relativeX = (x - slider.AbsolutePosition.X) / slider.AbsoluteSize.X
+                relativeX = math.clamp(relativeX, 0, 1)
+                local value = minValue + (maxValue - minValue) * relativeX
+                value = math.round(value * 10) / 10
+                label.Text = string.format("%s: %.1f", label.Text:match("^[^:]+"), value)
+                guiState[stateKey] = value
+                updateFunction(value)
+            end
+        end)
+    end
+
+    -- ドラッグ移動処理
     local dragging = false
-    slider.MouseButton1Down:Connect(function()
-        dragging = true
-    end)
-    slider.MouseButton1Up:Connect(function()
-        dragging = false
-    end)
-    slider.MouseMoved:Connect(function(x, y)
-        if dragging then
-            local relativeX = (x - slider.AbsolutePosition.X) / slider.AbsoluteSize.X
-            relativeX = math.clamp(relativeX, 0, 1)
-            local value = minValue + (maxValue - minValue) * relativeX
-            value = math.round(value * 10) / 10
-            label.Text = string.format("%s: %.1f", label.Text:match("^[^:]+"), value)
-            updateFunction(value)
+    local dragStart = nil
+    local startPos = nil
+    TitleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = Frame.Position
         end
     end)
-end
+    TitleBar.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            Frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            guiState.Position = Frame.Position
+        end
+    end)
+    TitleBar.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
 
--- スライダーの設定
-createSlider(BrightnessSlider, BrightnessLabel, 0, 5, 2, function(value)
-    Lighting.Brightness = value
-end)
+    -- リサイズ処理
+    local resizing = false
+    local minSize = Vector2.new(200, 300)
+    local maxSize = Vector2.new(600, 800)
+    ResizeHandle.MouseButton1Down:Connect(function()
+        resizing = true
+    end)
+    ResizeHandle.MouseButton1Up:Connect(function()
+        resizing = false
+    end)
+    ResizeHandle.MouseMoved:Connect(function(x, y)
+        if resizing then
+            local newSize = Vector2.new(
+                math.clamp(x - Frame.AbsolutePosition.X, minSize.X, maxSize.X),
+                math.clamp(y - Frame.AbsolutePosition.Y, minSize.Y, maxSize.Y)
+            )
+            Frame.Size = UDim2.new(0, newSize.X, 0, newSize.Y)
+            guiState.Size = Frame.Size
+        end
+    end)
 
-createSlider(FOVSlider, FOVLabel, 30, 120, 70, function(value)
-    Camera.FieldOfView = value
-end)
+    -- 閉じる/最小化処理
+    CloseButton.MouseButton1Click:Connect(function()
+        ScreenGui:Destroy()
+    end)
+    MinimizeButton.MouseButton1Click:Connect(function()
+        Frame.Visible = false
+        ShowButton.Visible = true
+    end)
+    ShowButton.MouseButton1Click:Connect(function()
+        Frame.Visible = true
+        ShowButton.Visible = false
+    end)
 
-createSlider(ZoomSlider, ZoomLabel, 10, 500, 128, function(value)
-    Player.CameraMaxZoomDistance = value
-end)
+    -- スライダーの設定
+    createSlider(BrightnessSlider, BrightnessLabel, 0, 5, guiState.Brightness, function(value)
+        Lighting.Brightness = value
+    end, "Brightness")
+    createSlider(FOVSlider, FOVLabel, 30, 120, guiState.FOV, function(value)
+        Camera.FieldOfView = value
+    end, "FOV")
+    createSlider(ZoomSlider, ZoomLabel, 10, 500, guiState.MaxZoom, function(value)
+        Player.CameraMaxZoomDistance = value
+    end, "MaxZoom")
 
--- 影のオン/オフ
-ShadowButton.MouseButton1Click:Connect(function()
-    Lighting.GlobalShadows = not Lighting.GlobalShadows
-    ShadowButton.Text = "Shadows: " .. (Lighting.GlobalShadows and "ON" or "OFF")
-end)
+    -- 影のオン/オフ
+    ShadowButton.MouseButton1Click:Connect(function()
+        guiState.Shadows = not guiState.Shadows
+        Lighting.GlobalShadows = guiState.Shadows
+        ShadowButton.Text = "Shadows: " .. (guiState.Shadows and "ON" or "OFF")
+    end)
 
--- リセットボタン
-ResetButton.MouseButton1Click:Connect(function()
+    -- リセットボタン
+    ResetButton.MouseButton1Click:Connect(function()
+        guiState.Brightness = 2
+        guiState.FOV = 70
+        guiState.MaxZoom = 128
+        guiState.Shadows = false
+        initializeLighting()
+        resetCamera()
+    end)
+
+    -- 初期化
     initializeLighting()
     resetCamera()
-end)
 
--- 初期化
-initializeLighting()
-resetCamera()
+    return ScreenGui
+end
+
+-- 初期GUI作成
+local currentGui = createGUI()
 
 -- カメラの強制変更を監視
 RunService.RenderStepped:Connect(function()
     if Camera.CameraType ~= Enum.CameraType.Custom then
-        resetCamera()
+        Camera.CameraType = Enum.CameraType.Custom
+        Camera.CameraSubject = Player.Character and Player.Character:FindFirstChildOfClass("Humanoid")
     end
 end)
 
 -- キャラクターがリスポーンしたとき
 Player.CharacterAdded:Connect(function()
     wait(0.1)
-    resetCamera()
+    if not Player.PlayerGui:FindFirstChild("LightingAndCameraControl") then
+        currentGui = createGUI()
+    end
+    Camera.CameraType = Enum.CameraType.Custom
+    Camera.CameraSubject = Player.Character and Player.Character:FindFirstChildOfClass("Humanoid")
+    Player.CameraMinZoomDistance = 0.5
+    Player.CameraMaxZoomDistance = guiState.MaxZoom
+    Camera.FieldOfView = guiState.FOV
 end)
